@@ -56,25 +56,22 @@ void loop() {
   }
 
   else if (leftTurnFlag && !rightTurnFlag){
-    digitalWrite(motor1PH, 0);
-    digitalWrite(motor2PH, 1);
-    analogWrite(motor1PWM, speed);
-    analogWrite(motor2PWM, speed-80);
+    setMotor(0, 1, speed, speed-80);
     if(noTurnFlag){leftTurnFlag = false;}
   }
 
   else if (!leftTurnFlag && rightTurnFlag){
-    digitalWrite(motor1PH, 0);
-    digitalWrite(motor2PH, 1);
-    analogWrite(motor1PWM, speed-80);
-    analogWrite(motor2PWM, speed);
+    setMotor(0, 1, speed-80, speed);
     if(noTurnFlag){rightTurnFlag = false;}
   }
 
+  //Write the code below
   //else if(leftTurnFlag && rightTurnFlag){
     //analogWrite(motor1PWM, 0);
     //analogWrite(motor2PWM, 0);
     //delay(1500);
+    //analogWrite(motor1PWM, 0);
+    //analogWrite(motor2PWM, 1);
     //leftTurnFlag = 0;
   //rightTurnFlag = 0;
   //}
