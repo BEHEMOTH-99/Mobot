@@ -10,7 +10,7 @@ const int inputY = 7;
 const int inputG = 15;
 
 //Set speed to 0 in order to turn off
-const int speed = 200;
+const int speed = 150;
 //const int LowerLightLimit = 200;
 //const int UpperLightLimit = 2000;
 const int LightBoundary = 900;
@@ -39,7 +39,6 @@ void setup() {
   pinMode(motor2PH, OUTPUT);
 }
 
-//Make a function that takes speed and phase for motors 1 & 2, and call it in the loop.
 
 void loop() {
   if(analogRead(inputO) < LightBoundary){noTurnFlag = true;}
@@ -51,19 +50,21 @@ void loop() {
   if(analogRead(inputY) < LightBoundary){rightTurnFlag = true;}
   else{rightTurnFlag = false;}
 
-  if(noTurnFlag){
-    setMotor(0, 1, speed, speed)
+  if(noTurnFlag && !rightTurnflag && !leftTurnFlag){
+    setMotor(0, 1, speed, speed);
   }
 
   else if (leftTurnFlag && !rightTurnFlag){
-    setMotor(0, 1, speed, speed-80);
+    setMotor(0, 1, speed, speed-60);
     if(noTurnFlag){leftTurnFlag = false;}
   }
 
   else if (!leftTurnFlag && rightTurnFlag){
-    setMotor(0, 1, speed-80, speed);
+    setMotor(0, 1, speed-60, speed);
     if(noTurnFlag){rightTurnFlag = false;}
   }
+
+  
 
   //Write the code below
   //else if(leftTurnFlag && rightTurnFlag){
@@ -76,8 +77,8 @@ void loop() {
   //rightTurnFlag = 0;
   //}
 
-  Serial.print(analogRead(inputY));
-  Serial.print("\n");
-  delay(200);
+  //Serial.print(analogRead(inputY));
+  //Serial.print("\n");
+  //delay(200);
 
 }
