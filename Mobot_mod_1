@@ -18,6 +18,14 @@ volatile bool leftTurnFlag = false;
 volatile bool rightTurnFlag = false;
 volatile bool noTurnFlag = false;
 
+void setMotor(bool M1direction, bool M2direction, int M1speed, int M2speed){
+  digitalWrite(motor1PH, M1direction);
+  digitalWrite(motor2PH, M2direction);
+  analogWrite(motor1PWM, M1speed);
+  analogWrite(motor2PWM, M2speed);
+}
+
+
 void setup() {
   Serial.begin(9600);
   pinMode(inputB, INPUT);
@@ -35,6 +43,7 @@ void setup() {
 
 void loop() {
   if(analogRead(inputO) < LightBoundary){noTurnFlag = true;}
+  else{noTurnFlag = false;}
 
   if(analogRead(inputR) < LightBoundary){leftTurnFlag = true;}
   else{leftTurnFlag = false;}
@@ -43,10 +52,7 @@ void loop() {
   else{rightTurnFlag = false;}
 
   if(noTurnFlag){
-    digitalWrite(motor1PH, 0);
-    digitalWrite(motor2PH, 1);
-    analogWrite(motor1PWM, speed);
-    analogWrite(motor2PWM, speed);
+    setMotor(0, 1, speed, speed)
   }
 
   else if (leftTurnFlag && !rightTurnFlag){
