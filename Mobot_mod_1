@@ -54,6 +54,7 @@ void loop() {
     setMotor(0, 1, speed, speed);
   }
 
+  //GET rid of if statements, it already exists above
   else if (leftTurnFlag && !rightTurnFlag){
     setMotor(0, 1, speed, speed-60);
     if(noTurnFlag){leftTurnFlag = false;}
