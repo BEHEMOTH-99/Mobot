@@ -28,11 +28,11 @@ void setMotor(bool M1direction, bool M2direction, int M1speed, int M2speed){
 
 void setup() {
   Serial.begin(9600);
-  pinMode(inputB, INPUT);
-  pinMode(inputR, INPUT);
-  pinMode(inputO, INPUT);
-  pinMode(inputY, INPUT);
-  pinMode(inputG, INPUT);
+  //pinMode(inputB, INPUT);
+  pinMode(inputR, INPUT);  // Left side
+  pinMode(inputO, INPUT);  // Middle 
+  pinMode(inputY, INPUT);  // Right side
+  //pinMode(inputG, INPUT);
   pinMode(motor1PWM, OUTPUT);
   pinMode(motor1PH, OUTPUT);
   pinMode(motor2PWM, OUTPUT);
@@ -41,14 +41,11 @@ void setup() {
 
 
 void loop() {
-  if(analogRead(inputO) < LightBoundary){noTurnFlag = true;}
-  else{noTurnFlag = false;}
+  noTurnFlag = analogRead(inputO) < LightBoundary;
 
-  if(analogRead(inputR) < LightBoundary){leftTurnFlag = true;}
-  else{leftTurnFlag = false;}
+  leftTurnFlag = analogRead(inputR) < LightBoundary;
 
-  if(analogRead(inputY) < LightBoundary){rightTurnFlag = true;}
-  else{rightTurnFlag = false;}
+  rightTurnFlag = analogRead(inputY) < LightBoundary;
 
   if(noTurnFlag && !rightTurnFlag && !leftTurnFlag){
     setMotor(0, 1, speed, speed);
@@ -57,29 +54,24 @@ void loop() {
   //GET rid of if statements, it already exists above
   else if (leftTurnFlag && !rightTurnFlag){
     setMotor(0, 1, speed, speed-60);
-    if(noTurnFlag){leftTurnFlag = false;}
   }
 
   else if (!leftTurnFlag && rightTurnFlag){
     setMotor(0, 1, speed-60, speed);
-    if(noTurnFlag){rightTurnFlag = false;}
   }
 
-  
+  else if (noTurnFlag && leftTurnFlag && rightTurnFlag){
+    setMotor(0, 1, 0, 0);
+    delay(1000);
+    setMotor(0, 1, speed, speed);
+    delay(300);
+  }
 
-  //Write the code below
-  //else if(leftTurnFlag && rightTurnFlag){
-    //analogWrite(motor1PWM, 0);
-    //analogWrite(motor2PWM, 0);
-    //delay(1500);
-    //analogWrite(motor1PWM, 0);
-    //analogWrite(motor2PWM, 1);
-    //leftTurnFlag = 0;
-  //rightTurnFlag = 0;
-  //}
-
-  //Serial.print(analogRead(inputY));
-  //Serial.print("\n");
+  //Serial.print(analogRead(inputR));
+  //Serial.print("\t");
+  //Serial.print(analogRead(inputO));
+  //Serial.print("\t");
+  //Serial.println(analogRead(inputY));
   //delay(200);
 
 }
