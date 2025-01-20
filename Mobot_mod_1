@@ -2,6 +2,7 @@ const int motor1PWM = 36;
 const int motor1PH = 35;
 const int motor2PWM = 38;
 const int motor2PH = 37;
+const int distanceSensor = 16;
 
 const int inputB = 4;  // Left
 const int inputR = 5;
@@ -11,14 +12,14 @@ const int inputG = 15;  // Right
 
 //Set speed to 0 in order to turn off
 const int speed = 150;  //90 speed it works
-//const int LowerLightLimit = 200;
-//const int UpperLightLimit = 2000;
 const int LightBoundary = 900;
 volatile bool leftTurnFlag = false;
 volatile bool rightTurnFlag = false;
 volatile bool noTurnFlag = false;
 volatile bool sharpRightTurnFlag = false;
 volatile bool sharpLeftTurnFlag = false;
+volatile bool parkFlag = false;
+const bool parkMode = false;  // set to true for car to move straight until it meets a wall and stops
 
 
 void setMotor(bool M1direction, bool M2direction, int M1speed, int M2speed){
@@ -31,11 +32,12 @@ void setMotor(bool M1direction, bool M2direction, int M1speed, int M2speed){
 
 void setup() {
   Serial.begin(9600);
-  pinMode(inputB, INPUT);
+  pinMode(inputB, INPUT);  // Far left side
   pinMode(inputR, INPUT);  // Left side
   pinMode(inputO, INPUT);  // Middle 
   pinMode(inputY, INPUT);  // Right side
-  pinMode(inputG, INPUT);
+  pinMode(inputG, INPUT);  // Far right side
+  pinMode(distanceSensor, INPUT);
   pinMode(motor1PWM, OUTPUT);
   pinMode(motor1PH, OUTPUT);
   pinMode(motor2PWM, OUTPUT);
@@ -45,20 +47,18 @@ void setup() {
 
 void loop() {
   sharpLeftTurnFlag = analogRead(inputB) < LightBoundary;
-
   sharpRightTurnFlag = analogRead(inputG) < LightBoundary;
-
   noTurnFlag = analogRead(inputO) < LightBoundary;
-
   leftTurnFlag = analogRead(inputR) < LightBoundary;
-
   rightTurnFlag = analogRead(inputY) < LightBoundary;
+  stopFlag = analogRead(distanceSensor) > 2400;
 
   if(noTurnFlag && !rightTurnFlag && !leftTurnFlag){
     setMotor(0, 1, speed, speed);
   }
 
-  //GET rid of if statements, it already exists above
+  // Distance sensor can check whether facing east or west side of the board, if orientation is important
+
   else if (leftTurnFlag && !rightTurnFlag){
     setMotor(0, 1, speed, speed-60);
   }
@@ -80,7 +80,22 @@ void loop() {
 
   else if (sharpRightTurnFlag){
     setMotor(0, 1, speed-150, speed);
-  } 
+  }
+
+  if (parkMode){
+    while(1){
+      setMotor(0, 1, speed, speed);
+      if(stopFlag){
+        while(1){
+          setMotor(0, 1, 0, 0);
+        }
+      }
+    }
+  }
+
+  //Serial.print(analogRead(distanceSensor));
+  //delay(300);
+  //Serial.print("\n");
 
   //Serial.print(analogRead(inputY));
   //Serial.print("\n");
