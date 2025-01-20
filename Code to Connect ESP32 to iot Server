@@ -24,9 +24,12 @@ void setup() {
 
 void loop() {
   // Example: Notify server of arrival at position 0
+
+  // I can put this at each node the vehicle stops, sending its current node location back to the server
   notifyServer(0);
 
   // Wait for 10 seconds before sending another notification
+  // Delay wont be necessary as it depends when the vehicle stops at a node
   delay(10000);
 }
 
@@ -49,6 +52,7 @@ void notifyServer(int position) {
     // Check response
     if (httpResponseCode > 0) {
       String response = http.getString();
+      // "response" variable holds the next destination node, use this in dijkstra calculation while the car is paused at node.
       Serial.println("Response from server: " + response);
     } else {
       Serial.print("Error in sending POST request: ");
