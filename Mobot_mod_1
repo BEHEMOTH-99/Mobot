@@ -4,11 +4,11 @@ const int motor2PWM = 38;
 const int motor2PH = 37;
 const int distanceSensor = 16;
 
-const int inputB = 4;  // Left
-const int inputR = 5;
+const int inputB = 4;  //Far left
+const int inputR = 5;  // Left
 const int inputO = 6;  // Middle
-const int inputY = 7;
-const int inputG = 15;  // Right
+const int inputY = 7;  // Right
+const int inputG = 15;  // Far right
 
 //Set speed to 0 in order to turn off
 const int speed = 150;  //90 speed it works
