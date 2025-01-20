@@ -1,6 +1,8 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
+// Read lines 30 and 57
+
 // Replace with your Wi-Fi credentials
 const char* ssid = "iot";
 const char* password = "enormousnesses66criticastry";
@@ -52,7 +54,7 @@ void notifyServer(int position) {
     // Check response
     if (httpResponseCode > 0) {
       String response = http.getString();
-      // "response" variable holds the next destination node, use this in dijkstra calculation while the car is paused at node.
+      // "response" variable holds the next destination node, use this in dijkstra calculation while the car is paused at node. Make this function return type an integer
       Serial.println("Response from server: " + response);
     } else {
       Serial.print("Error in sending POST request: ");
