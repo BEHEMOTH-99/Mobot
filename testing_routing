@@ -1,0 +1,149 @@
+const int motor1PWM = 36;
+const int motor1PH = 35;
+const int motor2PWM = 38;
+const int motor2PH = 37;
+const int distanceSensor = 16;
+
+const int inputB = 4;  // Left
+const int inputR = 5;
+const int inputO = 6;  // Middle
+const int inputY = 7;
+const int inputG = 15;  // Right
+
+//Set speed to 0 in order to turn off
+const int speed = 150;  //90 speed it works
+//const int LowerLightLimit = 200;
+//const int UpperLightLimit = 2000;
+const int LightBoundary = 900;
+volatile bool leftTurnFlag = false;
+volatile bool rightTurnFlag = false;
+volatile bool noTurnFlag = false;
+volatile bool sharpRightTurnFlag = false;
+volatile bool sharpLeftTurnFlag = false;
+volatile bool left_90turn = true;
+volatile bool right_90turn = true;
+volatile bool _180turn = true;
+const bool parkMode = true;  // set to true for car to move straight until it meets a wall and stops
+
+bool atNode(){
+    if (noTurnFlag && leftTurnFlag && rightTurnFlag){
+      setMotor(0, 1, 0, 0);
+      delay(1000);
+      setMotor(0, 1, speed, speed);
+      delay(300);
+      return true;
+  }
+}
+
+void lineFollow(){
+  sharpLeftTurnFlag = analogRead(inputB) < LightBoundary;
+  sharpRightTurnFlag = analogRead(inputG) < LightBoundary;
+  noTurnFlag = analogRead(inputO) < LightBoundary;
+  leftTurnFlag = analogRead(inputR) < LightBoundary;
+  rightTurnFlag = analogRead(inputY) < LightBoundary;
+
+
+  if(noTurnFlag && !rightTurnFlag && !leftTurnFlag){
+    setMotor(0, 1, speed, speed);
+  }
+ 
+  else if (leftTurnFlag && !rightTurnFlag){
+    setMotor(0, 1, speed, speed-60);
+  }
+
+  else if (!leftTurnFlag && rightTurnFlag){
+    setMotor(0, 1, speed-60, speed);
+  }
+
+  else if (sharpLeftTurnFlag){
+    setMotor(0, 1, speed, speed-150);
+  }
+
+  else if (sharpRightTurnFlag){
+    setMotor(0, 1, speed-150, speed);
+  }
+
+  if (parkMode){
+    while(1){
+      setMotor(0, 1, speed, speed);
+      delay(30);
+      if(analogRead(distanceSensor) > 1800){
+        while(1){
+          setMotor(0, 1, 0, 0);
+          delay(30);
+        }
+      }
+    }
+  }
+}
+
+void setMotor(bool M1direction, bool M2direction, int M1speed, int M2speed){
+  digitalWrite(motor1PH, M1direction);
+  digitalWrite(motor2PH, M2direction);
+  analogWrite(motor1PWM, M1speed);
+  analogWrite(motor2PWM, M2speed);
+}
+
+void _0_to_4(){
+  int count_node = 0;
+  while(1){
+    lineFollow();
+    if(atNode()){
+      count_node += 1;
+    }
+    if(count_node == 2){leftTurn();}
+  }
+}
+
+void rightTurn(){
+  setMotor(0, 1, 0, speed);
+  delay(1000);
+  setMotor(0, 1, 0, 0);
+  right_90turn = false;
+}
+
+void leftTurn(){
+  setMotor(0, 1, speed, 0);
+  delay(1000);
+  setMotor(0, 1, 0, 0);
+  left_90turn = false;
+}
+
+void halfTurn(){
+  setMotor(1, 1, speed, speed);
+  delay(1000);
+  setMotor(0, 1, 0, 0);
+  _180turn = false;
+}
+
+// IDEA: to recognise a junction, only one of the far side sensors will detect white, 
+// and the other will not. If white is detected, then call
+// the rotate function in the respective direction.
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(inputB, INPUT);  // Far left side
+  pinMode(inputR, INPUT);  // Left side
+  pinMode(inputO, INPUT);  // Middle 
+  pinMode(inputY, INPUT);  // Right side
+  pinMode(inputG, INPUT);  // Far right side
+  pinMode(distanceSensor, INPUT);
+  pinMode(motor1PWM, OUTPUT);
+  pinMode(motor1PH, OUTPUT);
+  pinMode(motor2PWM, OUTPUT);
+  pinMode(motor2PH, OUTPUT);
+}
+
+
+void loop(){
+  _0_to_4();
+  
+  //Serial.print(analogRead(distanceSensor));
+  //delay(300);
+  //Serial.print("\n");
+
+  //Serial.print(analogRead(inputY));
+  //Serial.print("\n");
+  //delay(200);
+
+}
