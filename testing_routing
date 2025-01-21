@@ -23,7 +23,22 @@ volatile bool sharpLeftTurnFlag = false;
 volatile bool left_90turn = true;
 volatile bool right_90turn = true;
 volatile bool _180turn = true;
-const bool parkMode = true;  // set to true for car to move straight until it meets a wall and stops
+const bool parkMode = false;  // set to true for car to move straight until it meets a wall and stops
+volatile int count_node = 0;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(inputB, INPUT);  // Far left side
+  pinMode(inputR, INPUT);  // Left side
+  pinMode(inputO, INPUT);  // Middle 
+  pinMode(inputY, INPUT);  // Right side
+  pinMode(inputG, INPUT);  // Far right side
+  pinMode(distanceSensor, INPUT);
+  pinMode(motor1PWM, OUTPUT);
+  pinMode(motor1PH, OUTPUT);
+  pinMode(motor2PWM, OUTPUT);
+  pinMode(motor2PH, OUTPUT);
+}
 
 bool atNode(){
     if (noTurnFlag && leftTurnFlag && rightTurnFlag){
@@ -84,14 +99,24 @@ void setMotor(bool M1direction, bool M2direction, int M1speed, int M2speed){
   analogWrite(motor2PWM, M2speed);
 }
 
+void stop(){
+  setMotor(0, 0, 0, 0);
+}
+
 void _0_to_4(){
-  int count_node = 0;
   while(1){
+    delay(5);
     lineFollow();
     if(atNode()){
       count_node += 1;
     }
-    if(count_node == 2){leftTurn();}
+    if(count_node == 2){
+      leftTurn();
+      count_node = 0;
+    }
+    else if(count_node == 3){
+      
+    }
   }
 }
 
@@ -120,23 +145,8 @@ void halfTurn(){
 // and the other will not. If white is detected, then call
 // the rotate function in the respective direction.
 
-void setup() {
-  Serial.begin(9600);
-  pinMode(inputB, INPUT);  // Far left side
-  pinMode(inputR, INPUT);  // Left side
-  pinMode(inputO, INPUT);  // Middle 
-  pinMode(inputY, INPUT);  // Right side
-  pinMode(inputG, INPUT);  // Far right side
-  pinMode(distanceSensor, INPUT);
-  pinMode(motor1PWM, OUTPUT);
-  pinMode(motor1PH, OUTPUT);
-  pinMode(motor2PWM, OUTPUT);
-  pinMode(motor2PH, OUTPUT);
-}
-
-
 void loop(){
-  _0_to_4();
+  lineFollow();
   
   //Serial.print(analogRead(distanceSensor));
   //delay(300);
