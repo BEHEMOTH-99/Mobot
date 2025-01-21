@@ -70,6 +70,13 @@ void lineFollow(){
     setMotor(0, 1, speed-60, speed);
   }
 
+  else if (noTurnFlag && leftTurnFlag && rightTurnFlag){
+    setMotor(0, 1, 0, 0);
+    delay(1000);
+    setMotor(0, 1, speed, speed);
+    delay(300);
+  }
+
   else if (sharpLeftTurnFlag){
     setMotor(0, 1, speed, speed-150);
   }
@@ -78,7 +85,10 @@ void lineFollow(){
     setMotor(0, 1, speed-150, speed);
   }
 
-  if (parkMode){
+}
+
+void park(){
+    if (parkMode){
     while(1){
       setMotor(0, 1, speed, speed);
       delay(30);
