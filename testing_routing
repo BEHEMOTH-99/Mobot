@@ -20,11 +20,9 @@ volatile bool rightTurnFlag = false;
 volatile bool noTurnFlag = false;
 volatile bool sharpRightTurnFlag = false;
 volatile bool sharpLeftTurnFlag = false;
-volatile bool left_90turn = true;
-volatile bool right_90turn = true;
-volatile bool _180turn = true;
+volatile bool entry = true;
 const bool parkMode = false;  // set to true for car to move straight until it meets a wall and stops
-volatile int count_node = 0;
+volatile int lock = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -41,13 +39,28 @@ void setup() {
 }
 
 bool atNode(){
-    if (noTurnFlag && leftTurnFlag && rightTurnFlag){
-      setMotor(0, 1, 0, 0);
-      delay(1000);
-      setMotor(0, 1, speed, speed);
-      delay(300);
-      return true;
+  if (noTurnFlag && leftTurnFlag && rightTurnFlag){
+    setMotor(0, 1, 0, 0);
+    delay(1000);
+    setMotor(0, 1, speed, speed);
+    delay(300);
+    return true;
   }
+  return false;
+}
+
+bool atNodeNP(){
+  if (noTurnFlag && leftTurnFlag && rightTurnFlag){
+    return true;
+  }
+  return false;
+}
+
+void pause_(){
+  setMotor(0, 1, 0, 0);
+  delay(1000);
+  setMotor(0, 1, speed, speed);
+  delay(300);
 }
 
 void lineFollow(){
@@ -57,6 +70,7 @@ void lineFollow(){
   leftTurnFlag = analogRead(inputR) < LightBoundary;
   rightTurnFlag = analogRead(inputY) < LightBoundary;
 
+  //MAKE it go faster if going straight
 
   if(noTurnFlag && !rightTurnFlag && !leftTurnFlag){
     setMotor(0, 1, speed, speed);
@@ -68,13 +82,6 @@ void lineFollow(){
 
   else if (!leftTurnFlag && rightTurnFlag){
     setMotor(0, 1, speed-60, speed);
-  }
-
-  else if (noTurnFlag && leftTurnFlag && rightTurnFlag){
-    setMotor(0, 1, 0, 0);
-    delay(1000);
-    setMotor(0, 1, speed, speed);
-    delay(300);
   }
 
   else if (sharpLeftTurnFlag){
@@ -113,51 +120,296 @@ void stop(){
   setMotor(0, 0, 0, 0);
 }
 
-void _0_to_4(){
+void straight(){
+  setMotor(0, 1, speed, speed);
+  delay(250);
+}
+
+// IF pausing at every node not necessary, remove lines 136 and 137. Change atNode function, only pause at nodes
+// listed in route on server (pause will be forced by notifyServer() function)
+// MAKE while llop for lineFollow and atNode if statement to decrease response time. In if statement, add a break, which then exits
+// to the lock if statements.
+
+void rightTurn90(){
+  setMotor(0, 1, 0, speed);
+  delay(950);
+  setMotor(0, 1, 0, 0);
+}
+
+void rightTurn45(){
+  setMotor(0, 1, 0, speed);
+  delay(475);
+  setMotor(0, 1, 0, 0);
+}
+
+void leftTurn90(){
+  setMotor(0, 1, speed, 0);
+  delay(950);
+  setMotor(0, 1, 0, 0);
+}
+
+void leftTurn45(){
+  setMotor(0, 1, speed, 0);
+  delay(475);
+  setMotor(0, 1, 0, 0);
+}
+
+void turn180(){
+  setMotor(1, 1, speed, speed);
+  delay(1000);
+  setMotor(0, 1, 0, 0);
+}
+
+
+void _0_to_1(){
+  lock = 0;
   while(1){
-    delay(5);
     lineFollow();
-    if(atNode()){
-      count_node += 1;
+    if(atNodeNP()){
+      lock += 1;
     }
-    if(count_node == 2){
-      leftTurn();
-      count_node = 0;
+    if(lock == 1){
+      lock = 2;
+      straight();
     }
-    else if(count_node == 3){
-      
+    else if(lock == 3){
+      leftTurn90();
+      lock = 4;
+    }
+    else if(lock == 5){
+      straight();
+      break;
     }
   }
 }
 
-void rightTurn(){
-  setMotor(0, 1, 0, speed);
-  delay(1000);
-  setMotor(0, 1, 0, 0);
-  right_90turn = false;
+void _1_to_0(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      rightTurn90();
+      lock = 2;
+    }
+    else if(lock == 5){
+      straight();
+      break;
+    }
+  }
 }
 
-void leftTurn(){
-  setMotor(0, 1, speed, 0);
-  delay(1000);
-  setMotor(0, 1, 0, 0);
-  left_90turn = false;
+void _1_to_4(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      leftTurn45();
+      lock = 2;
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
 }
 
-void halfTurn(){
-  setMotor(1, 1, speed, speed);
-  delay(1000);
-  setMotor(0, 1, 0, 0);
-  _180turn = false;
+void _4_to_1(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      rightTurn45();
+      lock = 2;
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
 }
+
+void _0_to_4(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      turn180();
+      straight();
+      lock = 2;
+    }
+    if(lock == 3){
+      straight();
+      break;
+    }
+  }
+}
+
+void _4_to_0(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      break;
+    }
+  }
+}
+
+void _0_to_2(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      lock = 2;
+    }
+    if(lock == 3){
+      straight();
+      lock = 4;
+    }
+    if(lock == 5){
+      straight();
+      break;
+    }
+  }
+}
+
+void _2_to_0(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      lock = 2;
+    }
+    if(lock == 3){
+      straight();
+      break;
+    }
+  }
+}
+
+void _4_to_3(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      lock = 2;
+      }
+    if(lock == 2){
+      straight();
+      break;
+    }
+  }
+}
+
+void _3_to_4(){
+  _4_to_3();
+}
+
+void _3_to_2(){
+  _4_to_0();
+}
+
+void _2_to_3(){
+  _4_to_0();
+}
+
+void _2_to_1(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      rightTurn90();
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+}
+
+void _1_to_2(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      leftTurn90();
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+}
+
+void _3_to_1(){
+  _1_to_2();
+}
+
+void _1_to_3(){
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      rightTurn45();
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+}
+
 
 // IDEA: to recognise a junction, only one of the far side sensors will detect white, 
 // and the other will not. If white is detected, then call
 // the rotate function in the respective direction.
 
 void loop(){
-  lineFollow();
-  
+  _0_to_4();
+  _4_to_1();
+  _1_to_2();
+  while(1){
+    pause_();
+  }
   //Serial.print(analogRead(distanceSensor));
   //delay(300);
   //Serial.print("\n");
