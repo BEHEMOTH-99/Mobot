@@ -125,10 +125,7 @@ void straight(){
   delay(250);
 }
 
-// IF pausing at every node not necessary, remove lines 136 and 137. Change atNode function, only pause at nodes
 // listed in route on server (pause will be forced by notifyServer() function)
-// MAKE while llop for lineFollow and atNode if statement to decrease response time. In if statement, add a break, which then exits
-// to the lock if statements.
 
 void rightTurn90(){
   setMotor(0, 1, 0, speed);
@@ -398,10 +395,6 @@ void _1_to_3(){
   }
 }
 
-
-// IDEA: to recognise a junction, only one of the far side sensors will detect white, 
-// and the other will not. If white is detected, then call
-// the rotate function in the respective direction.
 
 void loop(){
   _0_to_4();
