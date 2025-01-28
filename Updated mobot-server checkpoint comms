@@ -1,0 +1,56 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// Motor and sensor pins
+
+// Wi-Fi credentials
+const char* ssid = "iot";
+const char* password = "gingal8mesocephal";
+
+// Server details
+const char* serverUrl = "http://3.250.38.184:8000/api/arrived/wjdn3765";
+
+// Checkpoint variables
+int lastCheckpoint;
+int currentCheckpoint;
+int nextCheckpoint;
+
+
+int getNextCheckpoint() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(serverUrl);
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    String requestBody = "position=" + String(currentCheckpoint);
+    int httpResponseCode = http.POST(requestBody);
+
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.println("Response from server: " + response);
+
+      if (response.toInt() != 0 || response == "0") { // Ensure valid integer
+        http.end();
+        return response.toInt();
+      } else {
+        Serial.println("Invalid response received from server");
+      }
+    } else {
+      Serial.print("Error in sending POST request: ");
+      Serial.println(http.errorToString(httpResponseCode));
+    }
+
+    http.end();
+    return -1; // Error indicator
+  } else {
+    Serial.println("Wi-Fi not connected");
+    return -1; // Error indicator
+  }
+}
+
+
+
+
+
+// Dont need the stuff in the loop, everything contained in node traversal functions
+
