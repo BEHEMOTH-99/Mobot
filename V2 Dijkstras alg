@@ -1,3 +1,7 @@
+#ifndef PART_3_H
+#define PART_3_H
+#include <Arduino.h>
+
 const int NUM_CHECKPOINTS = 5;
 const int INF = 9999;  // Represents no path (infinity)
 
