@@ -1,5 +1,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include "part_2.h" //Update file names to the header files names you here
+#include "part_3.h"
 
 const int motor1PWM = 36;
 const int motor1PH = 35;
