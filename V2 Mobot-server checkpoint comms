@@ -1,3 +1,4 @@
+//Rename This header file to be able to include it in the main file
 #ifndef PART_2_H
 #define PART_2_H
 #include <Arduino.h>
