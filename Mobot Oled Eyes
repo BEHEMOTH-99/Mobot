@@ -30,6 +30,7 @@ void BlinkFrame(){
 };
 
 void BlinkingAnimation() {
+for(int i = 0; i <= 10; i ++){
   OpenEye();  // Start with an open eye
   delay(500);  // Keep it open for a short time
 
@@ -56,6 +57,7 @@ void BlinkingAnimation() {
 
   OpenEye();  // Return to open eye state
 }
+};
 
 
 void AngryEyes(){
@@ -82,5 +84,5 @@ void setup() {
 }
 
 void loop() {
-  // Nothing in the loop for now
+
 }
