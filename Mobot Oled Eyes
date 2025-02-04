@@ -1,0 +1,86 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128  // OLED display width, in pixels
+#define SCREEN_HEIGHT 64  // OLED display height, in pixels
+#define SCREEN_ADDRESS 0x3C  // Address for 128x64
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+void drawThickCircle(int x, int y, int radius, int thickness, int color) {
+  for (int i = 0; i < thickness; i++) {
+    display.drawCircle(x, y, radius + i, color);
+  }
+}
+void OpenEye(){
+  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 31, WHITE);
+  display.fillRect(0,(SCREEN_HEIGHT / 2)+15 , 128, 30, BLACK);
+  display.display();  // Refresh the display to show content
+};
+
+void BlinkFrame(){
+  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 31, WHITE);
+  display.fillRect(0,(SCREEN_HEIGHT / 2)+15 , 128, 30, BLACK);
+  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 24, BLACK);
+  drawThickCircle((SCREEN_WIDTH / 2)-27, (SCREEN_HEIGHT / 2)+15, 0, 4, WHITE);
+  drawThickCircle((SCREEN_WIDTH / 2)+27, (SCREEN_HEIGHT / 2)+15, 0, 4, WHITE);
+  display.display();  // Refresh the display to show content
+};
+
+void BlinkingAnimation() {
+  OpenEye();  // Start with an open eye
+  delay(500);  // Keep it open for a short time
+
+  for(int i = 0; i < 24; i += 3){  // Reduce steps for a smoother close effect
+    display.clearDisplay();  // Clear the screen before redrawing
+    drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + 15, 0, 31, WHITE);
+    display.fillRect(0,(SCREEN_HEIGHT / 2)+15 , 128, 30, BLACK);
+    display.fillRect(0, (SCREEN_HEIGHT / 2) + 15 - i, 0, 24, BLACK);
+    display.display();
+    delay(30);  // Reduce delay for smooth animation
+  }
+
+  BlinkFrame();  // Fully closed eye frame
+  delay(600);  // Keep closed for a short time
+
+  for(int i = 24; i >= 0; i -= 3){  // Reverse animation to open eye
+    display.clearDisplay();
+    drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + 15, 0, 31, WHITE);
+    display.fillRect(0,(SCREEN_HEIGHT / 2)+15 , 128, 30, BLACK);
+    display.fillRect(0, (SCREEN_HEIGHT / 2) + 15 - i, 0, 24, BLACK);
+    display.display();
+    delay(30);
+  }
+
+  OpenEye();  // Return to open eye state
+}
+
+
+void AngryEyes(){
+  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2), 0, 25, WHITE);
+  display.fillTriangle(0, 50, 50, 0, 120, 15, BLACK);
+};
+
+void setup() {
+  Wire.begin(3,8);  // Start I2C communication with default SDA & SCL pins
+  Serial.begin(115200);
+  
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;);  // Infinite loop to halt execution if the display fails
+  }
+
+  delay(2000);
+  display.clearDisplay();  // Clear display buffer
+
+
+  BlinkingAnimation();
+
+  display.display();  // Refresh the display to show content
+}
+
+void loop() {
+  // Nothing in the loop for now
+}
