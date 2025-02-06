@@ -1,0 +1,11 @@
+void onReceive(const uint8_t *macAddr, const uint8_t *data, size_t len, bool broadcast) {
+  Serial.printf("Received a message from master " MACSTR " (%s)\n", MAC2STR(macAddr), broadcast ? "broadcast" : "unicast");
+
+  if (len == sizeof(float)) { // Ensure the received data is a float
+    float yaw;
+    memcpy(&yaw, data, sizeof(float)); // Copy the raw data into a float variable
+    Serial.printf("  Received yaw data: %.2f\n", yaw);
+  } else {
+    Serial.println("  Received unexpected data format");
+  }
+}
