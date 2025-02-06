@@ -201,20 +201,17 @@ void turn180(){
 
 void _0_to_1(){
   lock = 0;
+  straight();
   while(1){
     lineFollow();
     if(atNodeNP()){
       lock += 1;
     }
     if(lock == 1){
+      leftTurn90();
       lock = 2;
-      straight();
     }
     else if(lock == 3){
-      leftTurn90();
-      lock = 4;
-    }
-    else if(lock == 5){
       straight();
       break;
     }
@@ -267,6 +264,9 @@ void _1_to_4(){
 }
 
 void _4_to_1(){
+  if((lastNode == 3) || (lastNode == 1)){
+    turn180();
+  }
   lock = 0;
   while(1){
     lineFollow();
@@ -282,9 +282,13 @@ void _4_to_1(){
       break;
     }
   }
+  lastNode = 4;
 }
 
 void _0_to_4(){
+  if((lastNode == 4) || (lastNode == -1)){
+  turn180();
+  }
   lock = 0;
   while(1){
     lineFollow();
@@ -292,18 +296,17 @@ void _0_to_4(){
       lock += 1;
     }
     if(lock == 1){
-      turn180();
-      straight();
-      lock = 2;
-    }
-    if(lock == 3){
       straight();
       break;
     }
   }
+  lastNode = 0;
 }
 
 void _4_to_0(){
+  if(lastNode == 0){
+    turn180();
+  }
   lock = 0;
   while(1){
     lineFollow();
@@ -315,9 +318,16 @@ void _4_to_0(){
       break;
     }
   }
+  lastNode = 4;
 }
 
 void _0_to_2(){
+  if((lastNode == 2) || (lastNode == 1)){
+    turn180();
+  }
+  else{
+    straight();
+  }
   lock = 0;
   while(1){
     lineFollow();
@@ -330,16 +340,16 @@ void _0_to_2(){
     }
     if(lock == 3){
       straight();
-      lock = 4;
-    }
-    if(lock == 5){
-      straight();
       break;
     }
   }
+  lastNode = 0;
 }
 
 void _2_to_0(){
+  if((lastNode == 1) || (lastNode == 0)){
+    turn180();
+  }
   lock = 0;
   while(1){
     lineFollow();
@@ -355,9 +365,13 @@ void _2_to_0(){
       break;
     }
   }
+  lastNode = 2;
 }
 
 void _4_to_3(){
+  if((lastNode == 3) || (lastNode == 1)){
+    turn180();
+  }
   lock = 0;
   while(1){
     lineFollow();
@@ -373,21 +387,71 @@ void _4_to_3(){
       break;
     }
   }
+  lastNode = 4;
 }
 
 void _3_to_4(){
-  _4_to_3();
+  if((lastNode == 1) || (lastNode == 4)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      lock = 2;
+      }
+    if(lock == 2){
+      straight();
+      break;
+    }
+  }
+  lastNode = 3;
 }
 
 void _3_to_2(){
-  _4_to_0();
+  if(lastNode == 2){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      break;
+    }
+  }
+  lastNode = 3;
 }
 
 void _2_to_3(){
-  _4_to_0();
+  if(lastNode == 3){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      break;
+    }
+  }
+  lastNode = 2;
 }
 
 void _2_to_1(){
+  if((lastNode == 1) || (lastNode == 0)){
+    turn180();
+  }
   lock = 0;
   while(1){
     lineFollow();
@@ -403,9 +467,13 @@ void _2_to_1(){
       break;
     }
   }
+  lastNode = 2;
 }
 
 void _1_to_2(){
+  if((lastNode == 2) || (lastNode == 0)){
+    turn180();
+  }
   lock = 0;
   while(1){
     lineFollow();
@@ -421,13 +489,35 @@ void _1_to_2(){
       break;
     }
   }
+  lastNode = 1;
 }
 
 void _3_to_1(){
-  _1_to_2();
+    if((lastNode == 1) || (lastNode == 4)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      leftTurn90();
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 3;
 }
 
 void _1_to_3(){
+  if((lastNode == 3) || (lastNode == 4)){
+    turn180();
+  }
   lock = 0;
   while(1){
     lineFollow();
@@ -443,8 +533,8 @@ void _1_to_3(){
       break;
     }
   }
+  lastNode = 1;
 }
-
 
 void loop(){
   int path[NUM_CHECKPOINTS];
@@ -524,7 +614,7 @@ void loop(){
     }
   }
   Serial.print(nextCheckpoint);
-  delay(300);
+  delay(50);
 
   //Serial.print(analogRead(distanceSensor));
   //delay(300);
