@@ -1,18 +1,29 @@
-//Rename This header file to be able to include it in the main file
-#ifndef PART_3_H
-#define PART_3_H
-#include <Arduino.h>
+#ifndef FULL_CODE_H
+#define FULL_CODE_H
 
-const int NUM_CHECKPOINTS = 5;
+#include <Arduino.h> 
+
+const int NUM_CHECKPOINTS = 6;
 const int INF = 9999;  // Represents no path (infinity)
 
 // Graph representation of the track
-int graph[NUM_CHECKPOINTS][NUM_CHECKPOINTS] = {
+/*
+int graph1[NUM_CHECKPOINTS][NUM_CHECKPOINTS] = {
   {  0,   7,   8, INF,   4 }, // From 0
   {  7,   0,   7,   11,   11 }, // From 1
   {  8,   7,   0,   4, INF }, // From 2
   {INF,   11,   4,   0,   19 }, // From 3
   {  4,   11, INF,   19,   0 }, // From 4
+};
+*/
+
+int graph[NUM_CHECKPOINTS][NUM_CHECKPOINTS] = {
+  {  0,   7,   8, INF,   4, INF }, // From 0
+  {  7,   0,   7,   11,   11, 2 }, // From 1
+  {  8,   7,   0,   4, INF, INF }, // From 2
+  {INF,   11,   4,   0,   19, 9 }, // From 3
+  {  4,   11, INF,   19,   0, 9 }, // From 4
+  {INF,   2,   INF,  9,    9, 0 }, // From 6 (referred to as 5 in terms of indexing)         
 };
 
 int findMinDistance(int distance[], bool visited[]) {
@@ -28,12 +39,11 @@ int findMinDistance(int distance[], bool visited[]) {
 }
 
 // Dijkstra’s algorithm implementation
-void dijkstra(int graph[NUM_CHECKPOINTS][NUM_CHECKPOINTS], int start, int target, int path[]) {
+void dijkstra(int graph[NUM_CHECKPOINTS][NUM_CHECKPOINTS], int start, int target, int path[], int spacer) {
   int distance[NUM_CHECKPOINTS];
   bool visited[NUM_CHECKPOINTS];
   int prev[NUM_CHECKPOINTS];
 
-  // Initialize distances and visited array
   for (int i = 0; i < NUM_CHECKPOINTS; i++) {
     distance[i] = INF;
     visited[i] = false;
@@ -41,37 +51,39 @@ void dijkstra(int graph[NUM_CHECKPOINTS][NUM_CHECKPOINTS], int start, int target
   }
   distance[start] = 0;
 
-  // Main algorithm
   for (int count = 0; count < NUM_CHECKPOINTS - 1; count++) {
     int u = findMinDistance(distance, visited);
     if (u == -1) break;
 
+    // Skip node 5 if spacer is active
+    if (spacer == 2 && u == 5) continue;
+
     visited[u] = true;
 
     for (int v = 0; v < NUM_CHECKPOINTS; v++) {
-      if (!visited[v] && graph[u][v] && distance[u] + graph[u][v] < distance[v]) {
+      if (spacer == 2 && v == 5) continue;  // Skip updates involving node 5
+      if (!visited[v] && graph[u][v] > 0 && distance[u] + graph[u][v] < distance[v]) {
         distance[v] = distance[u] + graph[u][v];
         prev[v] = u;
       }
     }
   }
 
-  // Reconstruct path
   int current = target, index = 0;
   while (current != -1) {
-    path[index++] = current;
-    current = prev[current];
+      path[index++] = current;
+      current = prev[current];
   }
 
-  // Reverse the path array
   for (int i = 0; i < index / 2; i++) {
-    int temp = path[i];
-    path[i] = path[index - i - 1];
-    path[index - i - 1] = temp;
+      int temp = path[i];
+      path[i] = path[index - i - 1];
+      path[index - i - 1] = temp;
   }
 
-  path[index] = -1;  // End of path
+  path[index] = -1;
 }
+
 
 // Function to simulate obstacle blocking
 void blockPath(int checkpointA, int checkpointB) {
@@ -88,7 +100,10 @@ void printPath(int path[]) {
   Serial.print("Path: ");
   for (int i = 0; path[i] != -1; i++) {
     Serial.print(path[i]);
-    if (path[i + 1] != -1) Serial.print(" -> ");
+ if (path[i + 1] != -1) Serial.print(" -> ");
   }
   Serial.println();
 }
+
+#endif
+
