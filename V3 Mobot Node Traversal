@@ -223,7 +223,7 @@ void rightTurn45(){
 
 void rightTurnPark(){
   setMotor(0, 1, 0, speed);
-  delay(1200);
+  delay(1000);
   setMotor(0, 1, 0, 0);
 }
 
