@@ -667,6 +667,7 @@ void _3_to_5(){
     }
     if(lock == 1){
       lock = 2;
+      rightTurnPark();
       while(1){
         setMotor(0, 1, speed, speed);
         //Serial.println("GOING FORWARD");  
