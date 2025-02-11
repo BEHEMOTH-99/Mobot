@@ -1,0 +1,29 @@
+#include <ESP32Servo.h>
+
+Servo myServo;
+int servoPin = 14;  // Use a PWM-capable GPIO
+
+void setup() {
+    myServo.attach(servoPin);
+}
+
+void loop() {
+    smoothMove(0, 180, 8);   // Move from 0° to 180° slowly
+    delay(1000);
+    smoothMove(180, 0, 16);   // Move from 180° to 0° slowly
+    delay(1000);
+}
+
+void smoothMove(int startAngle, int endAngle, int stepDelay) {
+    if (startAngle < endAngle) {
+        for (int pos = startAngle; pos <= endAngle; pos++) {
+            myServo.write(pos);
+            delay(stepDelay);  // Controls speed
+        }
+    } else {
+        for (int pos = startAngle; pos >= endAngle; pos--) {
+            myServo.write(pos);
+            delay(stepDelay);  // Controls speed
+        }
+    }
+}
