@@ -617,7 +617,7 @@ void _4_to_5(){
         //Serial.println("GOING FORWARD");  
         distance = analogRead(distanceSensor);
         delay(50);
-        if(distance > 1700){
+        if(distance > 1400){
           Serial.println(analogRead(distanceSensor));
           stop();
           break;
@@ -644,7 +644,7 @@ void _1_to_5(){
         //Serial.println("GOING FORWARD");  
         distance = analogRead(distanceSensor);
         delay(50);
-        if(distance > 1700){
+        if(distance > 1400){
           Serial.println(analogRead(distanceSensor));
           stop();
           break;
@@ -673,7 +673,7 @@ void _3_to_5(){
         //Serial.println("GOING FORWARD");  
         distance = analogRead(distanceSensor);
         delay(50);
-        if(distance > 1700){
+        if(distance > 1400){
           Serial.println(analogRead(distanceSensor));
           stop();
           break;
