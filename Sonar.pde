@@ -1,0 +1,53 @@
+import processing.serial.*;
+
+Serial myPort;  // Serial port
+float[] distances = new float[181]; // Store distances for 0-180 degrees
+int angle;
+
+void setup() {
+  size(600, 600);
+  myPort = new Serial(this, "COM6", 115200); // Replace "COM3" with your ESP32 port
+  myPort.bufferUntil('\n');
+}
+
+void draw() {
+  background(0);
+  translate(width / 2, height / 2);
+
+  // Draw radar lines
+  stroke(0, 255, 0);
+  noFill();
+  for (int r = 100; r <= 500; r += 100) {
+    ellipse(0, 0, r, r);
+  }
+  for (int i = 0; i <= 180; i += 30) {
+    float x = 300 * cos(radians(i - 90));
+    float y = 300 * sin(radians(i - 90));
+    line(0, 0, x, y);
+  }
+
+  // Plot distances
+  stroke(255, 0, 0);
+  for (int i = 0; i < 180; i++) {
+    float x1 = distances[i] * cos(radians(i - 90));
+    float y1 = distances[i] * sin(radians(i - 90));
+    float x2 = distances[i + 1] * cos(radians(i + 1 - 90));
+    float y2 = distances[i + 1] * sin(radians(i + 1 - 90));
+    line(x1, y1, x2, y2);
+  }
+}
+
+void serialEvent(Serial myPort) {
+  String data = myPort.readStringUntil('\n');
+  if (data != null) {
+    data = trim(data);
+    String[] parts = split(data, ',');
+    if (parts.length == 2) {
+      angle = int(parts[0]);
+      float distance = float(parts[1]);
+      if (angle >= 0 && angle <= 180) {
+        distances[angle] = map(distance, 0, 200, 0, 250); // Map to radar size
+      }
+    }
+  }
+}
