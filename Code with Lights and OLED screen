@@ -60,7 +60,8 @@ int spacer = 2;
 int distance = 0;
 
 void setup() {  WiFi.mode(WIFI_STA);
-Wire.begin(47,48);  // Start I2C communication with default SDA & SCL pins
+  Wire.begin(21,20);  // Start I2C communication with default SDA & SCL pins
+  OpenEye();  //put into setup, so it is only called once at the start
 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -157,7 +158,7 @@ void pause_(){
 }
 
 void lineFollow(){
-  OpenEye();
+
   /*
   Serial.println(analogRead(inputB));
   Serial.println(analogRead(inputR));
@@ -166,7 +167,7 @@ void lineFollow(){
   Serial.println(analogRead(inputG));
   Serial.println("................");
   */
-
+  /*
   strcpy(myData.a, "THIS IS A CHAR");
   myData.Yaw = yaw;
   
@@ -179,6 +180,7 @@ void lineFollow(){
   else {
     Serial.println("Error sending the data");
   }
+  */
   sharpLeftTurnFlag = analogRead(inputB) < LightBoundary;
   sharpRightTurnFlag = analogRead(inputG) < LightBoundary;
   noTurnFlag = analogRead(inputO) < LightBoundary;
