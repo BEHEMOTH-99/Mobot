@@ -1,0 +1,878 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include "FULL_CODE.h"
+#include "checkpoint_to_server_comms.h"
+#include "master_code.h"
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128  // OLED display width, in pixels
+#define SCREEN_HEIGHT 64  // OLED display height, in pixels
+#define SCREEN_ADDRESS 0x3C  // Address for 128x64
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+const int motor1PWM = 36;
+const int motor1PH = 35;
+const int motor2PWM = 38;
+const int motor2PH = 37;
+const int distanceSensor = 16;
+
+const int inputB = 4;  // Left
+const int inputR = 5;
+const int inputO = 6;  // Middle
+const int inputY = 7;
+const int inputG = 15;  // Right
+
+const int RI = 8;
+const int LI = 3;
+const int BL = 18;
+const int HL = 17;
+const int RL = 46;
+
+//Set speed to 0 in order to turn off
+const int speed = 150;  //90 speed it works
+//const int LowerLightLimit = 200;
+//const int UpperLightLimit = 2000;
+const int LightBoundary = 900;
+volatile bool leftTurnFlag = false;
+volatile bool rightTurnFlag = false;
+volatile bool noTurnFlag = false;
+volatile bool sharpRightTurnFlag = false;
+volatile bool sharpLeftTurnFlag = false;
+volatile bool entry = true;
+const bool parkMode = false;  // set to true for car to move straight until it meets a wall and stops
+volatile int lock = 0;
+
+int lastNode = -1;
+extern int lastCheckpoint;
+extern int currentCheckpoint;
+extern int nextCheckpoint;
+extern const char* ssid;
+extern const char* password;
+int routeID_ = 0;
+extern const int NUM_CHECKPOINTS;
+int path[NUM_CHECKPOINTS];
+int spacer = 2;
+int distance = 0;
+
+void setup() {  WiFi.mode(WIFI_STA);
+
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Once ESPNow is successfully Init, we will register for Send CB to
+  // get the status of Trasnmitted packet
+  esp_now_register_send_cb(OnDataSent);
+  
+  // Register peer
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = 0;  
+  peerInfo.encrypt = false;
+  
+  // Add peer        
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add peer");
+    return;
+  }
+
+  Serial.begin(115200);
+  pinMode(inputB, INPUT);  // Far left side
+  pinMode(inputR, INPUT);  // Left side
+  pinMode(inputO, INPUT);  // Middle 
+  pinMode(inputY, INPUT);  // Right side
+  pinMode(inputG, INPUT);  // Far right side
+  pinMode(distanceSensor, INPUT);
+  pinMode(motor1PWM, OUTPUT);
+  pinMode(motor1PH, OUTPUT);
+  pinMode(motor2PWM, OUTPUT);
+  pinMode(motor2PH, OUTPUT);
+
+  Serial.println("Connecting to Wi-Fi...");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected to Wi-Fi");
+
+  // Initialize the next checkpoint
+  while(true){
+    lineFollow();
+    if(atNodeNP()){
+      stop();
+      lastNode = -1;
+      currentCheckpoint = 0;
+      nextCheckpoint = getNextCheckpoint();
+      delay(100);
+      Serial.println("loop about to break");
+      straight();
+      break;
+      Serial.println("loop did not break");
+    }
+
+  }
+  pinMode(RI, OUTPUT);  
+  digitalWrite(RI, HIGH); 
+
+  pinMode(LI, OUTPUT);  
+  digitalWrite(LI, HIGH); 
+  
+  pinMode(BL, OUTPUT);  
+  digitalWrite(BL, HIGH;
+  
+  pinMode(HL, OUTPUT);  
+  digitalWrite(HL, HIGH);
+  
+  pinMode(RL, OUTPUT);  
+  digitalWrite(RL, HIGH);   
+}
+
+int routeID(int current, int next){
+  return((current-next)*(current+next));
+  //Serial.println(current);
+  //Serial.println(next);
+}
+
+
+bool atNodeNP(){
+  if (noTurnFlag && leftTurnFlag && rightTurnFlag){
+    return true;
+  }
+  return false;
+}
+
+void pause_(){
+  setMotor(0, 1, 0, 0);
+  delay(1000);
+  setMotor(0, 1, speed, speed);
+  delay(300);
+}
+
+void lineFollow(){
+  OpenEye();
+  /*
+  Serial.println(analogRead(inputB));
+  Serial.println(analogRead(inputR));
+  Serial.println(analogRead(inputO));
+  Serial.println(analogRead(inputY));
+  Serial.println(analogRead(inputG));
+  Serial.println("................");
+  */
+
+  strcpy(myData.a, "THIS IS A CHAR");
+  myData.Yaw = yaw;
+  
+  // Send message via ESP-NOW
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
+   
+  if (result == ESP_OK) {
+    Serial.println("Sent with success");
+  }
+  else {
+    Serial.println("Error sending the data");
+  }
+  sharpLeftTurnFlag = analogRead(inputB) < LightBoundary;
+  sharpRightTurnFlag = analogRead(inputG) < LightBoundary;
+  noTurnFlag = analogRead(inputO) < LightBoundary;
+  leftTurnFlag = analogRead(inputR) < LightBoundary;
+  rightTurnFlag = analogRead(inputY) < LightBoundary;
+
+  //MAKE it go faster if going straight
+
+  if(noTurnFlag && !rightTurnFlag && !leftTurnFlag){
+    setMotor(0, 1, speed, speed);
+  }
+ 
+  else if (leftTurnFlag && !rightTurnFlag){
+    setMotor(0, 1, speed, speed-60);
+  }
+
+  else if (!leftTurnFlag && rightTurnFlag){
+    setMotor(0, 1, speed-60, speed);
+  }
+
+  else if (sharpLeftTurnFlag){
+    setMotor(0, 1, speed, speed-150);
+  }
+
+  else if (sharpRightTurnFlag){
+    setMotor(0, 1, speed-150, speed);
+  }
+
+}
+
+void RightIndicator(){
+    for(int i; i<= 5; i++){
+  digitalWrite(RI, HIGH);  // Turn LED on
+  delay(100);                  // Wait for 1 second
+  digitalWrite(RI, LOW);   // Turn LED off
+  delay(100);                  // Wait for 1 second
+}
+}
+void LeftIndicator(){
+    for(int i; i<= 5; i++){
+  digitalWrite(LI, HIGH);  // Turn LED on
+  delay(100);                  // Wait for 1 second
+  digitalWrite(LI, LOW);   // Turn LED off
+  delay(100);                  // Wait for 1 second
+}
+void drawThickCircle(int x, int y, int radius, int thickness, int color) {
+  for (int i = 0; i < thickness; i++) {
+    display.drawCircle(x, y, radius + i, color);
+  }
+}
+void OpenEye(){
+  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 31, WHITE);
+  display.fillRect(0,(SCREEN_HEIGHT / 2)+15 , 128, 30, BLACK);
+  display.display();  // Refresh the display to show content
+};
+
+void BlinkFrame(){
+  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 31, WHITE);
+  display.fillRect(0,(SCREEN_HEIGHT / 2)+15 , 128, 30, BLACK);
+  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 24, BLACK);
+  drawThickCircle((SCREEN_WIDTH / 2)-27, (SCREEN_HEIGHT / 2)+15, 0, 4, WHITE);
+  drawThickCircle((SCREEN_WIDTH / 2)+27, (SCREEN_HEIGHT / 2)+15, 0, 4, WHITE);
+  display.display();  // Refresh the display to show content
+};
+
+void BlinkingAnimation() {
+for(int i = 0; i <= 5; i ++){
+  OpenEye();  // Start with an open eye
+  delay(50);  // Keep it open for a short time
+}
+
+void park(){
+    if (parkMode){
+    while(1){
+      setMotor(0, 1, speed, speed);
+      delay(30);
+      if(analogRead(distanceSensor) > 1800){
+        digitalWrite(BL, HIGH);
+        while(1){
+          setMotor(0, 1, 0, 0);
+          delay(30);
+        digitalWrite(BL, LOW);
+        }
+      }
+    }
+  }
+}
+
+void setMotor(bool M1direction, bool M2direction, int M1speed, int M2speed){
+  digitalWrite(motor1PH, M1direction);
+  digitalWrite(motor2PH, M2direction);
+  analogWrite(motor1PWM, M1speed);
+  analogWrite(motor2PWM, M2speed);
+}
+
+void stop(){
+  digitalWrite(BL, HIGH);  
+  setMotor(0, 0, 0, 0);
+}
+
+void straight(){
+  digitalWrite(BL, LOW);  
+  digitalWrite(HL, HIGH); 
+  setMotor(0, 1, speed, speed);
+  void BlinkingAnimation();
+  delay(250);
+}
+
+// listed in route on server (pause will be forced by notifyServer() function)
+
+void rightTurn90(){
+  setMotor(0, 1, 0, speed);
+  RightIndicator();
+  setMotor(0, 1, 0, 0);
+}
+
+void rightTurn45(){
+  setMotor(0, 1, 0, speed);
+  delay(475);
+  setMotor(0, 1, 0, 0);
+}
+
+void rightTurnPark(){
+  setMotor(0, 1, 0, speed);
+  RightIndicator();
+  setMotor(0, 1, 0, 0);
+}
+
+void leftTurn90(){
+  setMotor(0, 1, speed, 0);
+  LeftIndicator();
+  setMotor(0, 1, 0, 0);
+}
+
+void leftTurn45(){
+  setMotor(0, 1, speed, 0);
+  delay(475);
+  setMotor(0, 1, 0, 0);
+}
+
+void leftTurnPark(){
+  setMotor(0, 1, speed, 0);
+  LeftIndicator();
+  setMotor(0, 1, 0, 0);
+}
+
+//void leftTurnTillFlush(){
+
+//}
+
+void turn180(){
+  setMotor(1, 1, speed, speed);
+  digitalWrite(RL, HIGH);  // Turn LED on
+  delay(1000);
+  digitalWrite(RL, LOW);  // Turn LED off
+  setMotor(0, 1, 0, 0);
+}
+
+
+void _0_to_1(){
+  if((lastNode == 1) || (lastNode == 2)){
+    turn180();
+  }
+  lock = 0;
+  straight();
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      leftTurn90();
+      lock = 2;
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 0;
+}
+
+void _1_to_0(){
+  if((lastNode == 2) || (lastNode == 0)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      rightTurn90();
+      lock = 2;
+    }
+    else if(lock == 5){
+      straight();
+      break;
+    }
+  }
+  lastNode = 1;
+}
+
+void _1_to_4(){
+  if((lastNode == 3) || (lastNode == 4)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      leftTurn45();
+      lock = 2;
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 1;
+}
+
+void _4_to_1(){
+  if((lastNode == 3) || (lastNode == 1)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      rightTurn45();
+      lock = 2;
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 4;
+}
+
+void _0_to_4(){
+  if((lastNode == 4) || (lastNode == -1)){
+  turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      break;
+    }
+  }
+  lastNode = 0;
+}
+
+void _4_to_0(){
+  if(lastNode == 0){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      break;
+    }
+  }
+  lastNode = 4;
+}
+
+void _0_to_2(){
+  if((lastNode == 2) || (lastNode == 1)){
+    turn180();
+  }
+  else{
+    straight();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      lock = 2;
+    }
+    if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 0;
+}
+
+void _2_to_0(){
+  if((lastNode == 1) || (lastNode == 0)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      lock = 2;
+    }
+    if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 2;
+}
+
+void _4_to_3(){
+  if((lastNode == 3) || (lastNode == 1)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      lock = 2;
+      }
+    if(lock == 2){
+      straight();
+      break;
+    }
+  }
+  lastNode = 4;
+}
+
+void _3_to_4(){
+  if((lastNode == 1) || (lastNode == 4)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      lock = 2;
+      }
+    if(lock == 2){
+      straight();
+      break;
+    }
+  }
+  lastNode = 3;
+}
+
+void _3_to_2(){
+  if(lastNode == 2){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      break;
+    }
+  }
+  lastNode = 3;
+}
+
+void _2_to_3(){
+  if(lastNode == 3){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      straight();
+      break;
+    }
+  }
+  lastNode = 2;
+}
+
+void _2_to_1(){
+  if((lastNode == 1) || (lastNode == 0)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      rightTurn90();
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 2;
+}
+
+void _1_to_2(){
+  if((lastNode == 2) || (lastNode == 0)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      leftTurn90();
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 1;
+}
+
+void _3_to_1(){
+    if((lastNode == 1) || (lastNode == 4)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      leftTurn90();
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 3;
+}
+
+void _1_to_3(){
+  if((lastNode == 3) || (lastNode == 4)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      rightTurn45();
+    }
+    else if(lock == 3){
+      straight();
+      break;
+    }
+  }
+  lastNode = 1;
+}
+
+void _4_to_5(){
+  if((lastNode == 1) || (lastNode == 3)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      //Serial.println("LEFT TURN STARTED");
+      leftTurnPark();
+      //Serial.println("LEFT TURN COMPLETE");
+      while(1){
+        //Serial.println("WHILE LOOP ENTERED");
+        setMotor(0, 1, speed, speed);
+        //Serial.println("GOING FORWARD");  
+        distance = analogRead(distanceSensor);
+        delay(50);
+        if(distance > 1700){
+          Serial.println(analogRead(distanceSensor));
+          stop();
+          break;
+        }
+      }
+      break;
+    }
+  }
+}
+
+void _1_to_5(){
+  if((lastNode == 4) || (lastNode == 3)){
+  turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      while(1){
+        setMotor(0, 1, speed, speed);
+        //Serial.println("GOING FORWARD");  
+        distance = analogRead(distanceSensor);
+        delay(50);
+        if(distance > 1700){
+          Serial.println(analogRead(distanceSensor));
+          stop();
+          break;
+        }
+      }
+      break;
+    }
+  }
+}
+
+void _3_to_5(){
+  if((lastNode == 1) || (lastNode == 4)){
+    turn180();
+  }
+  lock = 0;
+  while(1){
+    lineFollow();
+    if(atNodeNP()){
+      lock += 1;
+    }
+    if(lock == 1){
+      lock = 2;
+      rightTurnPark();
+      while(1){
+        setMotor(0, 1, speed, speed);
+        //Serial.println("GOING FORWARD");  
+        distance = analogRead(distanceSensor);
+        delay(50);
+        if(distance > 1700){
+          Serial.println(analogRead(distanceSensor));
+          stop();
+          break;
+        }
+      }
+      break;
+    }
+  }
+}
+
+void loop(){
+
+  //goToBay(27.5, 32.5);
+  int path[NUM_CHECKPOINTS] = {0, 0, 0, 0, 0, 0};
+  //Serial.println(currentCheckpoint);
+  //Serial.println(nextCheckpoint);
+  //Serial.print("Entering loop()");
+
+  if(nextCheckpoint == 5){
+    spacer = 1;
+  }
+  
+  dijkstra(graph, currentCheckpoint, nextCheckpoint, path, spacer);
+  //Serial.print(path[0]);
+  //Serial.print(path[1]);
+
+
+  // Serial.println("dijkstra finished");
+    //Serial.println(currentCheckpoint);
+    //Serial.println(nextCheckpoint);
+
+  for(int i=0; path[i+1] != -1; i++){
+    Serial.println(path[i]);
+    Serial.println(path[i+1]);
+    routeID_ = routeID(path[i], path[i+1]);
+    //Serial.println(routeID_);
+    if((path[i+1] == 5) && (path[i] == 3)){
+      routeID_ = -17;
+    }
+
+    switch(routeID_){
+      case -1:
+        _0_to_1();
+        break;
+      case -4:
+        _0_to_2();
+        break;
+      case -16:
+        _0_to_4();
+        break;
+      case 1:
+        _1_to_0();
+        break;
+      case -3:
+        _1_to_2();
+        break;
+      case -8:
+        _1_to_3();
+        break;
+      case -15:
+        _1_to_4();
+        break;
+      case 4:
+        _2_to_0();
+          break;
+      case 3:
+        _2_to_1();
+        break;
+      case -5:
+        _2_to_3();
+        break;
+      case 8:
+        _3_to_1();
+        break;
+      case 5:
+        _3_to_2();
+        break;
+      case -7:
+        _3_to_4();
+        break;
+      case 16:
+        _4_to_0();
+        break;
+      case 15:
+        _4_to_1();
+        break;
+      case 7:
+        _4_to_3();
+        break;
+      case -9:
+        _4_to_5();
+        break;
+      case -24:
+        _1_to_5();
+        break;
+      case -17:
+        _3_to_5();
+        break;
+      }
+  }
+  stop();
+  lastCheckpoint = currentCheckpoint;
+  currentCheckpoint = nextCheckpoint;
+  nextCheckpoint = getNextCheckpoint();
+  if(nextCheckpoint == -1){
+    while(1){
+      stop();
+    }
+  }
+
+ 
+}
+  
+  //Serial.print(nextCheckpoint);
+
+  //Serial.print(analogRead(distanceSensor));
+  //delay(300);
+  //Serial.print("\n");
+
+  //Serial.print(analogRead(inputY));
+  //Serial.print("\n");
+  //delay(200);
