@@ -13,7 +13,7 @@
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
-wire.begin(47,48);  // Start I2C communication with default SDA & SCL pins
+
 
 const int motor1PWM = 36;
 const int motor1PH = 35;
@@ -60,6 +60,7 @@ int spacer = 2;
 int distance = 0;
 
 void setup() {  WiFi.mode(WIFI_STA);
+Wire.begin(47,48);  // Start I2C communication with default SDA & SCL pins
 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -223,6 +224,7 @@ void LeftIndicator(){
   digitalWrite(LI, LOW);   // Turn LED off
   delay(100);                  // Wait for 1 second
 }
+}
 void drawThickCircle(int x, int y, int radius, int thickness, int color) {
   for (int i = 0; i < thickness; i++) {
     display.drawCircle(x, y, radius + i, color);
@@ -232,7 +234,7 @@ void OpenEye(){
   drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 31, WHITE);
   display.fillRect(0,(SCREEN_HEIGHT / 2)+15 , 128, 30, BLACK);
   display.display();  // Refresh the display to show content
-};
+}
 
 void BlinkFrame(){
   drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 31, WHITE);
@@ -241,14 +243,14 @@ void BlinkFrame(){
   drawThickCircle((SCREEN_WIDTH / 2)-27, (SCREEN_HEIGHT / 2)+15, 0, 4, WHITE);
   drawThickCircle((SCREEN_WIDTH / 2)+27, (SCREEN_HEIGHT / 2)+15, 0, 4, WHITE);
   display.display();  // Refresh the display to show content
-};
+}
 
 void BlinkingAnimation() {
 for(int i = 0; i <= 5; i ++){
   OpenEye();  // Start with an open eye
   delay(50);  // Keep it open for a short time
 }
-
+}
 void park(){
     if (parkMode){
     while(1){
