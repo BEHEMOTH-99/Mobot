@@ -1,19 +1,47 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "FULL_CODE.h"
 #include "checkpoint_to_server_comms.h"
 #include "master_code.h"
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
-#define SCREEN_WIDTH 128  // OLED display width, in pixels
-#define SCREEN_HEIGHT 64  // OLED display height, in pixels
-#define SCREEN_ADDRESS 0x3C  // Address for 128x64
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define SCREEN_ADDRESS 0x3C
 
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
+void drawThickCircle(int x, int y, int radius, int thickness, int color) {
+    for (int i = 0; i < thickness; i++) {
+        display.drawCircle(x, y, radius + i, color);
+    }
+}
+
+void OpenEye() {
+    drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + 15, 0, 31, WHITE);
+    display.fillRect(0, (SCREEN_HEIGHT / 2) + 15, 128, 30, BLACK);
+    display.display();
+}
+
+void BlinkFrame() {
+    drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + 15, 0, 31, WHITE);
+    display.fillRect(0, (SCREEN_HEIGHT / 2) + 15, 128, 30, BLACK);
+    drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + 15, 0, 24, BLACK);
+    drawThickCircle((SCREEN_WIDTH / 2) - 27, (SCREEN_HEIGHT / 2) + 15, 0, 4, WHITE);
+    drawThickCircle((SCREEN_WIDTH / 2) + 27, (SCREEN_HEIGHT / 2) + 15, 0, 4, WHITE);
+    display.display();
+}
+
+void BlinkingAnimation() {
+    for (int i = 0; i <= 5; i++) {
+        OpenEye();
+        delay(500);
+        BlinkFrame();
+        delay(600);
+    }
+}
 
 const int motor1PWM = 36;
 const int motor1PH = 35;
@@ -60,9 +88,27 @@ int spacer = 2;
 int distance = 0;
 
 void setup() {  WiFi.mode(WIFI_STA);
-  Wire.begin(21,20);  // Start I2C communication with default SDA & SCL pins
-  OpenEye();  //put into setup, so it is only called once at the start
+  Wire.begin(2,1);
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+        Serial.println("SSD1306 allocation failed");
+        while (1);
+    }
+  display.clearDisplay();  // Clear display buffer
+  OpenEye();
+  pinMode(RI, OUTPUT);  
+  digitalWrite(RI, HIGH); 
 
+  pinMode(LI, OUTPUT);  
+  digitalWrite(LI, HIGH); 
+  
+  pinMode(BL, OUTPUT);  
+  digitalWrite(BL, HIGH);
+  
+  pinMode(HL, OUTPUT);  
+  digitalWrite(HL, HIGH);
+  
+  pinMode(RL, OUTPUT);  
+  digitalWrite(RL, HIGH); 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
@@ -120,21 +166,25 @@ void setup() {  WiFi.mode(WIFI_STA);
     }
 
   }
-  pinMode(RI, OUTPUT);  
-  digitalWrite(RI, HIGH); 
+  
 
-  pinMode(LI, OUTPUT);  
-  digitalWrite(LI, HIGH); 
-  
-  pinMode(BL, OUTPUT);  
-  digitalWrite(BL, HIGH);
-  
-  pinMode(HL, OUTPUT);  
-  digitalWrite(HL, HIGH);
-  
-  pinMode(RL, OUTPUT);  
-  digitalWrite(RL, HIGH);   
 }
+
+void RightIndicator(){
+    for(int i; i<= 5; i++){
+  digitalWrite(RI, HIGH);  // Turn LED on
+  delay(100);                  // Wait for 1 second
+  digitalWrite(RI, LOW);   // Turn LED off
+  delay(100);                  // Wait for 1 second
+}
+}
+void LeftIndicator(){
+    for(int i; i<= 5; i++){
+  digitalWrite(LI, HIGH);  // Turn LED on
+  delay(100);                  // Wait for 1 second
+  digitalWrite(LI, LOW);   // Turn LED off
+  delay(100);                  // Wait for 1 second
+}}
 
 int routeID(int current, int next){
   return((current-next)*(current+next));
@@ -158,7 +208,6 @@ void pause_(){
 }
 
 void lineFollow(){
-
   /*
   Serial.println(analogRead(inputB));
   Serial.println(analogRead(inputR));
@@ -167,7 +216,6 @@ void lineFollow(){
   Serial.println(analogRead(inputG));
   Serial.println("................");
   */
-  /*
   strcpy(myData.a, "THIS IS A CHAR");
   myData.Yaw = yaw;
   
@@ -180,7 +228,6 @@ void lineFollow(){
   else {
     Serial.println("Error sending the data");
   }
-  */
   sharpLeftTurnFlag = analogRead(inputB) < LightBoundary;
   sharpRightTurnFlag = analogRead(inputG) < LightBoundary;
   noTurnFlag = analogRead(inputO) < LightBoundary;
@@ -211,59 +258,15 @@ void lineFollow(){
 
 }
 
-void RightIndicator(){
-    for(int i; i<= 5; i++){
-  digitalWrite(RI, HIGH);  // Turn LED on
-  delay(100);                  // Wait for 1 second
-  digitalWrite(RI, LOW);   // Turn LED off
-  delay(100);                  // Wait for 1 second
-}
-}
-void LeftIndicator(){
-    for(int i; i<= 5; i++){
-  digitalWrite(LI, HIGH);  // Turn LED on
-  delay(100);                  // Wait for 1 second
-  digitalWrite(LI, LOW);   // Turn LED off
-  delay(100);                  // Wait for 1 second
-}
-}
-void drawThickCircle(int x, int y, int radius, int thickness, int color) {
-  for (int i = 0; i < thickness; i++) {
-    display.drawCircle(x, y, radius + i, color);
-  }
-}
-void OpenEye(){
-  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 31, WHITE);
-  display.fillRect(0,(SCREEN_HEIGHT / 2)+15 , 128, 30, BLACK);
-  display.display();  // Refresh the display to show content
-}
-
-void BlinkFrame(){
-  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 31, WHITE);
-  display.fillRect(0,(SCREEN_HEIGHT / 2)+15 , 128, 30, BLACK);
-  drawThickCircle(SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2)+15, 0, 24, BLACK);
-  drawThickCircle((SCREEN_WIDTH / 2)-27, (SCREEN_HEIGHT / 2)+15, 0, 4, WHITE);
-  drawThickCircle((SCREEN_WIDTH / 2)+27, (SCREEN_HEIGHT / 2)+15, 0, 4, WHITE);
-  display.display();  // Refresh the display to show content
-}
-
-void BlinkingAnimation() {
-for(int i = 0; i <= 5; i ++){
-  OpenEye();  // Start with an open eye
-  delay(50);  // Keep it open for a short time
-}
-}
 void park(){
     if (parkMode){
     while(1){
       setMotor(0, 1, speed, speed);
       delay(30);
       if(analogRead(distanceSensor) > 1800){
-        digitalWrite(BL, HIGH);
         while(1){
           setMotor(0, 1, 0, 0);
           delay(30);
-        digitalWrite(BL, LOW);
         }
       }
     }
@@ -278,16 +281,13 @@ void setMotor(bool M1direction, bool M2direction, int M1speed, int M2speed){
 }
 
 void stop(){
-  digitalWrite(BL, HIGH);  
   setMotor(0, 0, 0, 0);
 }
 
 void straight(){
-  digitalWrite(BL, LOW);  
-  digitalWrite(HL, HIGH); 
   setMotor(0, 1, speed, speed);
-  void BlinkingAnimation();
   delay(250);
+
 }
 
 // listed in route on server (pause will be forced by notifyServer() function)
@@ -339,6 +339,7 @@ void turn180(){
   digitalWrite(RL, LOW);  // Turn LED off
   setMotor(0, 1, 0, 0);
 }
+
 
 
 void _0_to_1(){
@@ -702,7 +703,7 @@ void _4_to_5(){
         //Serial.println("GOING FORWARD");  
         distance = analogRead(distanceSensor);
         delay(50);
-        if(distance > 1700){
+        if(distance > 1400){
           Serial.println(analogRead(distanceSensor));
           stop();
           break;
@@ -729,7 +730,7 @@ void _1_to_5(){
         //Serial.println("GOING FORWARD");  
         distance = analogRead(distanceSensor);
         delay(50);
-        if(distance > 1700){
+        if(distance > 1400){
           Serial.println(analogRead(distanceSensor));
           stop();
           break;
@@ -758,7 +759,7 @@ void _3_to_5(){
         //Serial.println("GOING FORWARD");  
         distance = analogRead(distanceSensor);
         delay(50);
-        if(distance > 1700){
+        if(distance > 1400){
           Serial.println(analogRead(distanceSensor));
           stop();
           break;
