@@ -13,6 +13,7 @@
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+Wire.begin(47,48);  // Start I2C communication with default SDA & SCL pins
 
 const int motor1PWM = 36;
 const int motor1PH = 35;
