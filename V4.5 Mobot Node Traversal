@@ -9,7 +9,7 @@
 #include "checkpoint_to_server_comms.h"
 #include "master_code.h"
 #include <ESP32Servo.h>
-#include <"BEEPERNOISE.h">
+#include "BEEPERNOISE1.h"
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define SCREEN_ADDRESS 0x3C
@@ -67,7 +67,6 @@ const int LI = 3;
 const int BL = 18;
 const int HL = 17;
 const int RL = 46;
-#define BUZZER_PIN 21  // Change to your desired GPIO pin
 
 //Set speed to 0 in order to turn off
 const int speed = 150;  //90 speed it works
@@ -158,7 +157,7 @@ void obstructionManeuver(){
   Serial.println("OBSTRUCTION");
   stop();
   AngryEyes();
-  carBeepPattern();
+  Beep();
   myServo.write(0);
   delay(500);
   maneuverLeftTurn();
@@ -204,7 +203,6 @@ void obstructionManeuver(){
 
 
 void setup() {  
-    pinMode(BUZZER_PIN, OUTPUT);
   WiFi.mode(WIFI_STA);
 
   Wire.begin(2,1);
@@ -321,13 +319,7 @@ void LeftIndicator(){
   delay(100);                  // Wait for 1 second
 }}
 
-void carBeepPattern() {
-    for (int i = 0; i < 2; i++) { // Two short beeps
-      tone(BUZZER_PIN, 1000, 200);  // 1000Hz frequency, 200ms duration
-      delay(300); // Small gap between beeps
-    }
-    delay(1000); // Pause before next beep sequence
-  }
+
 
 int routeID(int current, int next){
   return((current-next)*(current+next));
